@@ -77,7 +77,7 @@ def sendData(json_obj):
     if "getturn" in json_obj:
         while len(aux_river) < 4:
             river_sockets[len(aux_river)].sendto(bytearray(json_obj, "ascii"), ("bd20212.dcc023.2advanced.dev", 52221 + len(aux_river)))
-            river_sockets[len(aux_river)].settimeout(0.15)
+            river_sockets[len(aux_river)].settimeout(0.5)
             aux_data = []
             while len(aux_data) < 8:
                 try:
@@ -86,10 +86,10 @@ def sendData(json_obj):
                     if bytearray("state", "ascii") not in data:
                         if bytearray("gameover", "ascii") in data:
                             writeReceivedFile(data)
+                            return
                         else:
                             continue
                     aux_data.insert(0, data)
-                    river_sockets[len(aux_river)].settimeout(0.15)
                 except socket.timeout:
                     tiem += 0.05
                     river_sockets[len(aux_river)].settimeout(tiem)
@@ -221,15 +221,17 @@ if connection_success:
                     for boat in ship_position["ships"]:
                         ships.insert(0, (ship_position["bridge"], i))
                         ships.insert(0, boat["id"])
-                        f.close()
+                f.close()
         for i in range(1, len(ships), 2):
             for pos in shooting_range:
                 lis = []
                 if tuple(pos) == ships[i]:
                     lis.insert(0, pos)
-                    args = [auth, tuple(lis[0]), ships[i - 1], "shot"]
+                    args = [auth, tuple(pos), ships[i - 1], "shot"]
                     print("Shot at: " + str(ships[i]) + " from cannon " + str(pos[0]) + "," + str(pos[1]) + " at ship id " + str(ships[i - 1]))
                     shooting_range.remove(pos)
                     formatRequests(args)
+                else:
+                    args = []
 else:
     print("Connection failed, retrying connection...")

@@ -1,8 +1,7 @@
 import time
 import socket
 import json
-import itertools
-
+import sys
 
 #Algoritmo de retransmissão:
 #O algoritimo manda a requisição com o timeout definido como
@@ -18,7 +17,7 @@ def authReq(json_req):
     tiem = 0
     count = 0
     not_connected = [52221, 52222, 52223, 52224]
-    client_socket.sendto(bytearray(json_req, "ascii"), ("bd20212.dcc023.2advanced.dev", not_connected[0]))
+    client_socket.sendto(bytearray(json_req, "ascii"), (hostname, not_connected[0]))
     while len(not_connected) != 0:
         for addr in not_connected:
             try:
@@ -35,7 +34,7 @@ def authReq(json_req):
                 break
             except socket.timeout:
                 print("Request timed out for server port " + str(addr) + ", retrying connection attempt...")
-                client_socket.sendto(bytearray(json_req, "ascii"), ("bd20212.dcc023.2advanced.dev", addr))
+                client_socket.sendto(bytearray(json_req, "ascii"), (hostname, addr))
                 tiem += 0.05
                 client_socket.settimeout(tiem)
                 count += 1
@@ -76,7 +75,7 @@ def sendData(json_obj):
     aux_river = {}
     if "getturn" in json_obj:
         while len(aux_river) < 4:
-            river_sockets[len(aux_river)].sendto(bytearray(json_obj, "ascii"), ("bd20212.dcc023.2advanced.dev", 52221 + len(aux_river)))
+            river_sockets[len(aux_river)].sendto(bytearray(json_obj, "ascii"), (hostname, 52221 + len(aux_river)))
             river_sockets[len(aux_river)].settimeout(0.5)
             aux_data = []
             while len(aux_data) < 8:
@@ -86,34 +85,35 @@ def sendData(json_obj):
                     if bytearray("state", "ascii") not in data:
                         if bytearray("gameover", "ascii") in data:
                             writeReceivedFile(data)
-                            return
+                            return data
                         else:
                             continue
                     aux_data.insert(0, data)
                 except socket.timeout:
-                    tiem += 0.15
-                    river_sockets[len(aux_river)].settimeout(tiem)
                     break
             if not checkHasAllBridges(aux_data):
                 continue
             else:
                 aux_river.update({len(aux_river): aux_data})
         formatStateRes(aux_river)
+        return data
     else:
-        client_socket.sendto(bytearray(json_obj, "ascii"), ("bd20212.dcc023.2advanced.dev", 52221))
+        client_socket.sendto(bytearray(json_obj, "ascii"), (hostname, 52221))
         client_socket.settimeout(0.15)
         while len(aux_data) < 1:
             try:
                 writeSendFile(json_obj)
                 data, server = client_socket.recvfrom(1024)
+                if bytearray("state", "ascii") in data:
+                    break
                 client_socket.settimeout(0.15)
                 aux_data.insert(0, data)
             except socket.timeout:
                 tiem += 0.05
                 client_socket.settimeout(tiem)
-                client_socket.sendto(bytearray(json_obj, "ascii"), ("bd20212.dcc023.2advanced.dev", 52221))
-    writeReceivedFile(data)
-    return data
+                client_socket.sendto(bytearray(json_obj, "ascii"), (hostname, 52221))
+        writeReceivedFile(data)
+        return data
 
 
 def writeSendFile(json_obj):
@@ -124,6 +124,7 @@ def writeSendFile(json_obj):
 
 
 def writeReceivedFile(json_obj):
+
         aux_json = formatReceivedData(json_obj)
         filename = aux_json["type"] + ".json"
         with open(filename, 'w') as outfile:
@@ -159,6 +160,7 @@ def formatReceivedData(json_obj):
 
 
 def formatStateRes(json_dict):
+
     try:
         type_name = formatReceivedData(json_dict[0][0])
     except IndexError:
@@ -180,87 +182,126 @@ def formatStateRes(json_dict):
                     outfile.write(json.dumps(aux_json, indent=4, sort_keys=True))
 
 def findCannon(ship_coord):
+
     cannon_coord = []
     if ship_coord[1] in [1, 2, 3]:
         for i in range(2):
-            cannon_coord.insert(0, [ship_coord[0], ship_coord[1] + i])
+            cannon_coord.insert(0, [ship_coord[0], ship_coord[1] - i])
         return cannon_coord
     else:
         return ship_coord
 
 
-def isSunk(boat):
-    return (boat["hull"] == "frigate" and boat["hits"] >= 1) or \
-           (boat["hull"] == "destroyer" and boat["hits"] >= 2) or \
-            (boat["hull"] == "battleship" and boat["hits"] >= 3)
+def parseCommand(command):
+    parsed = []
+    aux_list = []
+    if "getcannons" in command:
+        return command
+    elif "getturn" in command:
+        parsed.insert(0, int(command.pop(0)))
+        parsed.insert(1, command.pop(0))
+        return parsed
+    elif "shot" in command:
+        lis = str.split(command.pop(0), ",")
+        for item in lis:
+            aux_list.insert(lis.index(item), int(item))
+        parsed.insert(0, lis)
+        parsed.insert(1, int(command.pop(0)))
+        parsed.insert(2, command.pop(0))
+        return parsed
+    elif "quit" in command:
+        return command
+    else:
+        print("Wrong command type")
 
-
+arguments = sys.argv
+#arguments = ["bd20212.dcc023.2advanced.dev", "52221" ,"2018013968:1:1c9324306dd2f0c2e3bc8623dc9df0d9d9b90cc5e0557843073665d069ceed3d+5a9ba60f795949fac526fe359039e17ce52f6e58f0a4ba3f1a748c98e2ab04fc"]
+try:
+    hostname = arguments.pop(0)
+    port = arguments.pop(0)
+    auth = arguments.pop(0)
+except IndexError:
+    print("Wrong number of arguments")
 json_req = {
             "type": "authreq",
-            "auth": "2018013968:1:1c9324306dd2f0c2e3bc8623dc9df0d9d9b90cc5e0557843073665d069ceed3d+5a9ba60f795949fac526fe359039e17ce52f6e58f0a4ba3f1a748c98e2ab04fc"
+            "auth": auth
           }
 json_req = json.dumps(json_req, indent=4, sort_keys=True)
-auth = "2018013968:1:1c9324306dd2f0c2e3bc8623dc9df0d9d9b90cc5e0557843073665d069ceed3d+5a9ba60f795949fac526fe359039e17ce52f6e58f0a4ba3f1a748c98e2ab04fc"
 message = json_req
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client_socket.settimeout(0.2)
 river_sockets = []
 for i in range(4):
     river_sockets.insert(0, socket.socket(socket.AF_INET, socket.SOCK_DGRAM))
+connection_success = authReq(json_req)
+while True:
+    if connection_success:
+        print("Type the command separated by blank spaces in the format specified below (It's not necessary to type in the SAG):")
+        print("getcannons: auth, type\ngetturn: auth, turn, type\nshot: auth, cannon, id, type\nquit: auth, type")
+        arguments = parseCommand(str.split(input(), " "))
+        arguments.insert(0, auth)
+        response = formatRequests(arguments).decode()
+        if "gameover" in response:
+            print(json.dumps(json.loads(response), indent=4, sort_keys=True))
+            break
+        print(json.dumps(json.loads(response), indent=4, sort_keys=True))
+    else:
+        print("Connection failed, retrying...")
+        connection_success = authReq(json_req)
+    
 #Argumentos na lista vão em ordem alfabetica:
 #getcannons: auth, type
 #getturn: auth, turn, type
 #shot: auth, cannon, id, type
 #quit: auth, type
-p = 0
-while p < 100:
-    connection_success = authReq(json_req)
-    args = [auth, "getcannons"]
-    if connection_success:
-        formatRequests(args)
-        f = open("cannons.json")
-        cannons = json.load(f)
-        print(cannons["cannons"])
-        f.close()
-        cannon_dict = {}
-        for i in range(273):
-            shooting_range = []
-            for cannon in cannons["cannons"]:
-                shooting_range.insert(0, cannon)
-            ships = []
-            print("Starting turn: " + str(i))
-            args = [auth, i, "getturn"]
-            formatRequests(args)
-            for i in range(1, 5):
-                for j in range(8):
-                    f = open("River" + str(i) + "state" + str(j) + ".json")
-                    ship_position = json.load(f)
-                    if ship_position["ships"]:
-                        for boat in ship_position["ships"]:
-                            if isSunk(boat):
-                                continue
-                            ships.insert(0, (ship_position["bridge"], i))
-                            ships.insert(0, boat["id"])
-                    f.close()
-            for i in range(1, len(ships), 2):
-                for pos in shooting_range:
-                    lis = findCannon(ships[i])
-                    if isinstance(lis[0], int):
-                        if tuple(pos) == lis:
-                            args = [auth, tuple(pos), ships[i - 1], "shot"]
-                            print("Shot at: " + str(ships[i]) + " from cannon " + str(pos[0]) + "," + str(pos[1]) + " at ship id " + str(ships[i - 1]))
-                            shooting_range.remove(pos)
-                            formatRequests(args)
-                        else:
-                            args = []
-                    else:
-                        if pos == lis[0] or pos == lis[1]:
-                            args = [auth, tuple(pos), ships[i - 1], "shot"]
-                            print("Shot at: " + str(ships[i]) + " from cannon " + str(pos[0]) + "," + str(pos[1]) + " at ship id " + str(ships[i - 1]))
-                            shooting_range.remove(pos)
-                            formatRequests(args)
-                        else:
-                            args = []
-        p += 1
-    else:
-        print("Connection failed, retrying connection...")
+#Algoritmo de execução automática
+# p = 0
+# while p < 100:
+#     connection_success = authReq(json_req)
+#     args = [auth, "getcannons"]
+#     if connection_success:
+#         formatRequests(args)
+#         f = open("cannons.json")
+#         cannons = json.load(f)
+#         print(cannons["cannons"])
+#         f.close()
+#         cannon_dict = {}
+#         for i in range(273):
+#             shooting_range = []
+#             for cannon in cannons["cannons"]:
+#                 shooting_range.insert(0, cannon)
+#             ships = []
+#             print("Starting turn: " + str(i))
+#             args = [auth, i, "getturn"]
+#             formatRequests(args)
+#             for i in range(1, 5):
+#                 for j in range(8):
+#                     f = open("River" + str(i) + "state" + str(j) + ".json")
+#                     ship_position = json.load(f)
+#                     if ship_position["ships"]:
+#                          ships.insert(0, (ship_position["bridge"], i))
+#                          ships.insert(0, boat["id"])
+#                     f.close()
+#             for i in range(1, len(ships), 2):
+#                 for pos in shooting_range:
+#                     lis = findCannon(ships[i])
+#                     if isinstance(lis[0], int):
+#                         if tuple(pos) == lis:
+#                             args = [auth, tuple(pos), ships[i - 1], "shot"]
+#                             print("Shot at: " + str(ships[i]) + " from cannon " + str(pos[0]) + "," + str(pos[1]) + " at ship id " + str(ships[i - 1]))
+#                             shooting_range.remove(pos)
+#                             formatRequests(args)
+#                         else:
+#                             args = []
+#                     else:
+#                         if pos == lis[0] or pos == lis[1]:
+#                             args = [auth, tuple(pos), ships[i - 1], "shot"]
+#                             print("Shot at: " + str(ships[i]) + " from cannon " + str(pos[0]) + "," + str(pos[1]) + " at ship id " + str(ships[i - 1]))
+#                             shooting_range.remove(pos)
+#                             formatRequests(args)
+#                         else:
+#                             args = []
+#         p += 1
+#         print(p)
+#     else:
+#         print("Connection failed, retrying connection...")

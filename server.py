@@ -1,17 +1,16 @@
 import json
-from flask import Flask
 import asyncio
 import socket
-
+from flask import request, Flask
 
 app = Flask(__name__)
 
 
-@app.route("/api/game/<id>", methods=['GET'])
+@app.route("/api/game/<id>")
 def game(id):
     stats = "No games found in DataSet"
     for games in games_played:
-        if games["id"] == id:
+        if games["id"] == int(id):
             stats = games
             break
         else:
@@ -19,30 +18,38 @@ def game(id):
     return {"game_id": id, "game_stats": stats}
 
 
-@app.route("/api/rank/sunk?start=<index1>&end=<index2>", methods=['GET'])
-def sunk(index1, index2):
+@app.route("/api/rank/sunk")
+def sunk():
+    args = request.args.to_dict()
+    start = int(args["start"])
+    end = int(args["end"])
     podium_sunk = {"ranking": "sunk"}
-    if index1 > index2:
+    if start > end:
         return "End id must be greater than start id"
     else:
-        podium_sunk["start"] = index1
-        podium_sunk["end"] = index2
+        podium_sunk["start"] = start
+        podium_sunk["end"] = end
         scoreboard = getScore(games_played, 'sunk_ships')
         scoreboard_sorted = sorted(scoreboard, key=lambda i: i['sunk_ships'], reverse=True)
         podium_sunk['game_ids'] = getIdByScore(scoreboard_sorted, podium_sunk["start"], podium_sunk["end"], podium_sunk['ranking'])
+        return podium_sunk
 
 
-@app.route("/api/rank/escaped?start=<index1>&end=<index2>", methods=['GET'])
-def escaped(index1, index2):
-    podium_sunk = {"ranking": "escaped"}
-    if index1 > index2:
+@app.route("/api/rank/escaped")
+def escaped():
+    args = request.args.to_dict()
+    start = int(args["start"])
+    end = int(args["end"])
+    podium_escaped = {"ranking": "escaped"}
+    if start > end:
         return "End id must be greater than start id"
     else:
-        podium_sunk["start"] = index1
-        podium_sunk["end"] = index2
+        podium_escaped["start"] = start
+        podium_escaped["end"] = end
         scoreboard = getScore(games_played, 'escaped_ships')
         scoreboard_sorted = sorted(scoreboard, key=lambda i: i['escaped_ships'], reverse=True)
-        podium_sunk['game_ids'] = getIdByScore(scoreboard_sorted, podium_sunk["start"], podium_sunk["end"], podium_sunk['ranking'])
+        podium_escaped['game_ids'] = getIdByScore(scoreboard_sorted, podium_escaped["start"], podium_escaped["end"], podium_escaped['ranking'])
+        return podium_escaped
 
 
 def getScore(dataset, key):
@@ -56,8 +63,9 @@ def getScore(dataset, key):
 def getIdByScore(dataset, start, end, type):
     ids = []
     length = (end - start) + 1
+    if length > len(dataset):
+        return "Too many games!"
     for scores in dataset:
-        set = []
         for games in games_played:
             if scores == games['score']:
                 ids.insert(0, games['id'])
@@ -72,6 +80,7 @@ games_played = json.load(fp)
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind(("localhost", 80))
 server_socket.listen(5)
+app.run()
 while True:
     (client_socket, address) = server_socket.accept()
     data = client_socket.recv(1024)

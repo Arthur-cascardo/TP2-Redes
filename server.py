@@ -2,10 +2,9 @@ import json
 from flask import Flask
 import asyncio
 import socket
-from operator import itemgetter
 
 
-app = Flask("TP2")
+app = Flask(__name__)
 
 
 @app.route("/api/game/<id>", methods=['GET'])
@@ -70,11 +69,14 @@ def getIdByScore(dataset, start, end, type):
 
 fp = open("dataset.json", 'r')
 games_played = json.load(fp)
-scoreboard = getScore(games_played, 'sunk_ships')
-scoreboard_sorted = sorted(scoreboard, key=lambda i: i['sunk_ships'], reverse=True)
-print(getIdByScore(scoreboard_sorted, 1, len(scoreboard_sorted), 'sunk'))
-scoreboard = getScore(games_played, 'escaped_ships')
-scoreboard_sorted = sorted(scoreboard, key=lambda i: i['escaped_ships'], reverse=True)
-print(getIdByScore(scoreboard_sorted, 1, len(scoreboard_sorted), 'escaped'))
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.bind(("localhost", 80))
+server_socket.listen(5)
+while True:
+    (client_socket, address) = server_socket.accept()
+    data = client_socket.recv(1024)
+    print(data.decode("ascii"))
+    message = "Server: " + input()
+    client_socket.send(bytearray(message, "ascii"))
 
 

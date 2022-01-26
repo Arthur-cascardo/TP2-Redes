@@ -1,6 +1,4 @@
 import json
-import asyncio
-import socket
 from flask import request, Flask
 
 app = Flask(__name__)
@@ -78,14 +76,14 @@ def getIdByScore(dataset, start, end, type):
 fp = open("dataset.json", 'r')
 games_played = json.load(fp)
 app.run()
-#server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#server_socket.bind(("localhost", 8090))
-#server_socket.listen(5)
-
-
-#(client_socket, address) = server_socket.accept()
-#data = client_socket.recv(1024)
-#rcv_msg=(data.decode("ascii"))
-#print(rcv_msg)
-#return_msg = "Codigo de analise cadastrado"
-#client_socket.send(bytearray(return_msg, "ascii"))
+# server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# server_socket.bind(("localhost", 8090))
+# server_socket.listen(5)
+#
+#
+# (client_socket, address) = server_socket.accept()
+# data = client_socket.recv(1024)
+# rcv_msg=(data.decode("ascii"))
+# print(rcv_msg)
+# return_msg = "Codigo de analise cadastrado"
+# client_socket.send(bytearray(return_msg, "ascii"))

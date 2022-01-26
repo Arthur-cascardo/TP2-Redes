@@ -77,15 +77,15 @@ def getIdByScore(dataset, start, end, type):
 
 fp = open("dataset.json", 'r')
 games_played = json.load(fp)
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind(("localhost", 80))
-server_socket.listen(5)
 app.run()
-while True:
-    (client_socket, address) = server_socket.accept()
-    data = client_socket.recv(1024)
-    print(data.decode("ascii"))
-    message = "Server: " + input()
-    client_socket.send(bytearray(message, "ascii"))
+#server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#server_socket.bind(("localhost", 8090))
+#server_socket.listen(5)
 
 
+#(client_socket, address) = server_socket.accept()
+#data = client_socket.recv(1024)
+#rcv_msg=(data.decode("ascii"))
+#print(rcv_msg)
+#return_msg = "Codigo de analise cadastrado"
+#client_socket.send(bytearray(return_msg, "ascii"))

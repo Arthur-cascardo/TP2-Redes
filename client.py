@@ -14,9 +14,7 @@ def parse_input(arg):
     ip_port[1] = int(ip_port[1])
     analysis = arg.pop(0)
     if analysis == '1':
-        games = httpRequest(ip_port, analysis, None)
-        games_info = getTop100GamesInfo(ip_port, games["game_ids"])
-        return analise_1(games_info)
+        return analise_1(ip_port)
     elif analysis == '2':
         games = httpRequest(ip_port, analysis, None)
         games_info = getTop100GamesInfo(ip_port, games["game_ids"])
@@ -25,13 +23,10 @@ def parse_input(arg):
         return "Error"
 
 
-def analise_1(arg):
+def analise_1(ip_port):
     f = open("output.csv", "w")
     auth_ids = []
     idsAndSunkShips = []
-    ip_port = arg.pop(0).split(":")
-    ip_port[1] = int(ip_port[1])
-    analysis = arg.pop(0)
     req = "/api/rank/sunk?start=1&end=100"
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect((ip_port[0], ip_port[1]))
@@ -154,11 +149,11 @@ def httpRequest(ip_port, analysis, game_id):
     return json_obj
 
 
-# arguments = sys.argv
-arguments = ["localhost" + ":" + "5000", "1"]
-response = analise_1(arguments)
-print(response)
-#print(parse_input(arguments))
+arguments = sys.argv
+arguments.pop(0)
+#arguments = ["localhost" + ":" + "5000", "1"]
+
+print(parse_input(arguments))
 
 
 

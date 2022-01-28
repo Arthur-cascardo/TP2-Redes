@@ -79,7 +79,8 @@ def analise_1(arg):
                 sumOfSunk = sumOfSunk + idsAndSunkShips[aux3]
             aux3 = aux3 + 1
         avrgSunk = sumOfSunk/numOfGames
-        print(x,",",numOfGames,",",avrgSunk,file=f)
+        
+        print(x,",",numOfGames,",",round(avrgSunk,2),file=f)
     
     f.close()
     return "Arquivo criado com o nome output.csv em seu diretorio"

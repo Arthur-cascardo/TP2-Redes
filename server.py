@@ -29,7 +29,7 @@ def sunk():
         podium_sunk["end"] = end
         scoreboard = getScore(games_played, 'sunk_ships')
         scoreboard_sorted = sorted(scoreboard, key=lambda i: i['sunk_ships'], reverse=True)
-        podium_sunk['game_ids'] = getIdByScore(scoreboard_sorted, podium_sunk["start"], podium_sunk["end"], podium_sunk['ranking'])
+        podium_sunk['game_ids'] = getIdByScore(scoreboard_sorted, podium_sunk["start"], podium_sunk["end"])
         return podium_sunk
 
 
@@ -45,8 +45,9 @@ def escaped():
         podium_escaped["start"] = start
         podium_escaped["end"] = end
         scoreboard = getScore(games_played, 'escaped_ships')
-        scoreboard_sorted = sorted(scoreboard, key=lambda i: i['escaped_ships'], reverse=True)
-        podium_escaped['game_ids'] = getIdByScore(scoreboard_sorted, podium_escaped["start"], podium_escaped["end"], podium_escaped['ranking'])
+        scoreboard_sorted = sorted(scoreboard, key=lambda i: i['escaped_ships'], reverse=False)
+        podium_escaped['game_ids'] = getIdByScore(scoreboard_sorted, podium_escaped["start"], podium_escaped["end"])
+        print(podium_escaped)
         return podium_escaped
 
 
@@ -58,7 +59,7 @@ def getScore(dataset, key):
     return scores
 
 
-def getIdByScore(dataset, start, end, type):
+def getIdByScore(dataset, start, end):
     ids = []
     length = (end - start) + 1
     if length > len(dataset):
@@ -68,22 +69,10 @@ def getIdByScore(dataset, start, end, type):
             if scores == games['score']:
                 ids.insert(0, games['id'])
         if len(ids) == length:
-            if type == 'sunk':
-                ids.reverse()
             return ids
 
 
 fp = open("dataset.json", 'r')
 games_played = json.load(fp)
 app.run()
-# server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# server_socket.bind(("localhost", 8090))
-# server_socket.listen(5)
-#
-#
-# (client_socket, address) = server_socket.accept()
-# data = client_socket.recv(1024)
-# rcv_msg=(data.decode("ascii"))
-# print(rcv_msg)
-# return_msg = "Codigo de analise cadastrado"
-# client_socket.send(bytearray(return_msg, "ascii"))
+#eof

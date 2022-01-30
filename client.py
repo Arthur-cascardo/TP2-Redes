@@ -140,5 +140,11 @@ def httpRequest(ip_port, analysis, game_id):
 
 arguments = sys.argv
 arguments.pop(0)
+cleanInput = arguments[0].split("/")
+cleanInput.pop(0)
+arguments.pop(0)
+arguments = cleanInput+arguments
 print(parse_input(arguments))
+
+
 # eof

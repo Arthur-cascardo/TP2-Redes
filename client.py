@@ -62,9 +62,6 @@ def analise_1(games_info):
     return games_out_list
 
 
-def funct(sets):
-    return sets['avrg_sunk']
-
 
 def analise_2(game_info):
     f = open("output.csv", "w")
